@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     float damping = 2;
 
     // Create a UsdStage with that root layer.
-    UsdStageRefPtr stage = UsdStage::Open(SdfLayer::CreateNew("rubberCube.usda"));
+    UsdStageRefPtr stage = UsdStage::Open(SdfLayer::CreateNew("rubberTetrahedron.usda"));
 
     // Copy objVerts into VtVec3fArray for Usd.
 

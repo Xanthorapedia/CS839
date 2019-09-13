@@ -1,5 +1,5 @@
 create_simple_config(NAME
-                   rubberCube
+                   rubberTetrahedron
                    SRCS
                    physics.hpp
                    main.cpp)

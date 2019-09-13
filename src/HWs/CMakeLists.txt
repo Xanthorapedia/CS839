@@ -1,1 +1,1 @@
-add_subdirectory(HW1-RubberCube)
+add_subdirectory(HW1-rubberTetrahedron)
