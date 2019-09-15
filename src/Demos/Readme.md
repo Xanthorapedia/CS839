@@ -1,1 +1,1 @@
-This directory contains demos adapted from [professor Sifakis' repo](https://github.com/uwgraphics/PhysicsBasedModeling-Demos) for completeness.
+This directory contains demos adapted from [professor Sifakis' repo](https://github.com/uwgraphics/PhysicsBasedModeling-Demos) for completeness. Any source code under this directory and its subdirectories subjects to the BSD 3-Clause License with copyright held by [UW Graphics Group](https://github.com/uwgraphics).
