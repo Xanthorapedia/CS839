@@ -12,6 +12,7 @@ set(CMAKE_CXX_FLAGS "/wd\"4244\" /wd\"4305\" /wd\"4267\" ${CMAKE_CXX_FLAGS}")
 set(Python_ADDITIONAL_VERSIONS 2.7)
 find_package(PythonLibs REQUIRED)
 find_package(OpenGL)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 # set(USD_ROOT_DIR "$<$<CONFIG:Debug>:$ENV{USD_HOME_DBG}>$<$<CONFIG:Release>:$EN
 # V{USD_HOME_RLS}>")
@@ -52,7 +53,7 @@ function(create_simple_config)
   # config for this target
   add_executable(${PARSED_ARGS_NAME} ${PARSED_ARGS_SRCS})
   target_include_directories(${PARSED_ARGS_NAME} PUBLIC ${USD_COMMON_INCLUDES})
-  target_link_libraries(${PARSED_ARGS_NAME} ${USD_COMMON_LIBS})
+  target_link_libraries(${PARSED_ARGS_NAME} ${USD_COMMON_LIBS} Eigen3::Eigen)
 
 endfunction(create_simple_config)
 

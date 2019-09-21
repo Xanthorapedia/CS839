@@ -13,11 +13,15 @@
 #include <iostream>
 #include <cmath>
 
+#include <Eigen/Dense>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 template<class T, int d> // d is the dimension of the mesh elements, e.g. 3 for triangles, 4 for quads
 struct AnimatedMesh
 {
+    using Vector3 = Eigen::Matrix< T , 3 , 1>;
+    
     SdfLayerRefPtr m_layer;
     UsdStageRefPtr m_stage;
     UsdGeomMesh m_mesh;
@@ -27,7 +31,7 @@ struct AnimatedMesh
     int m_lastFrame;
     
     std::vector<std::array<int, d>> m_meshElements;
-    std::vector<GfVec3f> m_particleX;
+    std::vector<Vector3> m_particleX;
 
     AnimatedMesh()
         :m_lastFrame(-1)
@@ -82,11 +86,12 @@ struct AnimatedMesh
 
         // Update extent
         for (const auto& pt : m_particleX)
-            m_extent.UnionWith(pt);
+            m_extent.UnionWith(GfVec3f(pt[0],pt[1],pt[2]));
 
         // Copy particleX into VtVec3fArray for Usd
-        VtVec3fArray usdPoints;
-        usdPoints.assign(m_particleX.begin(), m_particleX.end());
+        VtVec3fArray usdPoints(m_particleX.size());
+        for(int p = 0; p < m_particleX.size(); p++)
+            usdPoints[p] = GfVec3f(m_particleX[p][0],m_particleX[p][1],m_particleX[p][2]);
         
         // Write the points attribute for the given frame
         m_pointsAttribute.Set(usdPoints, (double) frame);
@@ -114,6 +119,7 @@ template<class T>
 struct LatticeMesh : public AnimatedMesh<T, 4>
 {
     using Base = AnimatedMesh<T, 4>;
+    using Vector3 = typename Base::Vector3;
     using Base::m_meshElements;
     using Base::m_particleX;
     using Base::initializeUSD;
@@ -123,19 +129,23 @@ struct LatticeMesh : public AnimatedMesh<T, 4>
     std::array<int, 2> m_cellSize; // dimensions in grid cells
     T m_gridDX;
     int m_nFrames;
+    int m_subSteps;
+    T m_frameDt;
 
-    static constexpr int m_pinchRadius = 1;
-    static constexpr T m_particleMass = 1.0;
-    static constexpr int m_subSteps = 10;
-    static constexpr T m_stiffnessCoeff = 1.0;
-    static constexpr T m_dampingCoeff = 0.2;
-    static constexpr T m_frameDt = 0.1;
+    const int m_pinchRadius;
+    const T m_particleMass;
+    const T m_stiffnessCoeff;
+    const T m_dampingCoeff;
 
-    std::vector<GfVec3f> m_particleV;
+    std::vector<Vector3> m_particleV;
+
+    LatticeMesh()
+        :m_pinchRadius(1), m_particleMass(1.0), m_stiffnessCoeff(1.0), m_dampingCoeff(0.2)
+    {}
 
     void initialize()
     {
-        initializeUSD("latticeMeshElasticityTest2.usda");
+        initializeUSD("latticeMeshElasticityTest3.usda");
 
         // Create a Cartesian lattice topology
         for(int cell_i = 0; cell_i < m_cellSize[0]; cell_i++)
@@ -156,13 +166,13 @@ struct LatticeMesh : public AnimatedMesh<T, 4>
         for(int node_j = 0; node_j <= m_cellSize[1]; node_j++)
             if( std::abs(node_i - m_cellSize[0]/2) <= m_pinchRadius &&
                 std::abs(node_j - m_cellSize[1]/2) <= m_pinchRadius )
-                m_particleX.emplace_back(m_gridDX * (T)node_i, m_gridDX * (T)node_j, m_gridDX * 0.25 * (T) (m_cellSize[0]+m_cellSize[1]));
+                m_particleX.emplace_back(m_gridDX * (T)node_i + m_gridDX * 0.1 * (T) (m_cellSize[0]+m_cellSize[1]), m_gridDX * (T)node_j + m_gridDX * 0.1 * (T) (m_cellSize[0]+m_cellSize[1]), T());
             else
                 m_particleX.emplace_back(m_gridDX * (T)node_i, m_gridDX * (T)node_j, T());
         initializeParticles();
 
         // Also resize the velocities to match
-        m_particleV.resize(m_particleX.size(), GfVec3f(0.0, 0.0, 0.0));
+        m_particleV.resize(m_particleX.size(), Vector3::Zero());
     }
 
     void prepareFrame(const int frame)
@@ -173,7 +183,7 @@ struct LatticeMesh : public AnimatedMesh<T, 4>
     void relaxFreeNodes()
     {
         // Relax every interior node
-        for(int iteration = 0; iteration < 100; iteration++)
+        for(int iteration = 0; iteration < 1000; iteration++)
             for(int node_i = 1; node_i < m_cellSize[0]; node_i++)
             for(int node_j = 1; node_j < m_cellSize[1]; node_j++){
 
@@ -190,7 +200,7 @@ struct LatticeMesh : public AnimatedMesh<T, 4>
             }
     }
 
-    void addForce(std::vector<GfVec3f>& f)
+    void addForce(std::vector<Vector3>& f)
     {
         for(int node_i = 1; node_i < m_cellSize[0]; node_i++)
         for(int node_j = 1; node_j < m_cellSize[1]; node_j++){
@@ -216,13 +226,13 @@ struct LatticeMesh : public AnimatedMesh<T, 4>
     void simulateSubstep(const T dt)
     {
         const int nParticles = m_particleX.size();
-        std::vector<GfVec3f> force(nParticles, GfVec3f(0.0, 0.0, 0.0));
+        std::vector<Vector3> force(nParticles, Vector3::Zero());
 
         addForce(force);
         for(int p = 0; p < nParticles; p++)
-            m_particleV[p] += (dt / m_particleMass) * force[p];
-        for(int p = 0; p < nParticles; p++)
             m_particleX[p] += dt * m_particleV[p];
+        for(int p = 0; p < nParticles; p++)
+            m_particleV[p] += (dt / m_particleMass) * force[p];
     }
 
     void simulateFrame(const int frame)
@@ -243,6 +253,8 @@ int main(int argc, char *argv[])
     simulationMesh.m_cellSize = { 40, 40 };
     simulationMesh.m_gridDX = 0.025;
     simulationMesh.m_nFrames = 400;
+    simulationMesh.m_subSteps = 10;
+    simulationMesh.m_frameDt = 0.1;
 
     // Initialize the simulation example
     simulationMesh.initialize();
