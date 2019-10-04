@@ -1,4 +1,4 @@
 create_simple_config(NAME
-                     MembranePinch2
+                     MembranePinch6
                      SRCS
                      main.cpp)
