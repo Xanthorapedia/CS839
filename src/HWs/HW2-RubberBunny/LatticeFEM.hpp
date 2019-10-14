@@ -215,10 +215,12 @@ public:
 			particleV[p] += (dt / m_particleMass) * force[p];
 
 		for (int p = 0; p < nParticles; p++)
-		if (particleX[p][1] < 0) {
-			particleX[p][1] = 0;
-			particleV[p][1] = 0;
-		}
+			if (particleX[p][1] < -1)
+			{
+				particleX[p][1] = -1;
+				particleV[p][1] = 0;
+				// treadmill
+			}
 	}
 
 	void Lattice<N_TETR, N_VERT>::simulateStep(const float dt, const int nSubsteps, const float frame)
