@@ -5,6 +5,8 @@
 #include "pxr/base/gf/range1f.h"
 #include "pxr/base/gf/range3f.h"
 
+namespace CS839 {
+
 class Animesh
 {
 private:
@@ -66,3 +68,5 @@ public:
         return GfRange1f({0, lastTime});
     }
 };
+
+}

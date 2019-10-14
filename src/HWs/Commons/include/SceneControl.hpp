@@ -6,6 +6,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range1f.h"
 
+namespace CS839 {
+
 class SceneControl
 {
 private:
@@ -54,3 +56,5 @@ public:
 		}
 	}
 };
+
+}
