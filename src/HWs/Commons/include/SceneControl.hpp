@@ -31,6 +31,12 @@ public:
 		return meshes.back();
 	}
 
+	// retrieves an existent mesh
+	Animesh &getMesh(int idx)
+	{
+		return meshes[idx];
+	}
+
 	// Save the animation to the USD file
 	bool saveAnimation()
 	{
